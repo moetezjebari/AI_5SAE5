@@ -28,8 +28,9 @@ export class QuizService {
 
   private persistCustomQuizzes(allQuizzes: Quiz[]): void {
     try {
-      // On sauvegarde les quiz créés ou générés par IA
-      const customQuizzes = allQuizzes.filter(q => q.isAiGenerated || q.id.startsWith('custom-') || q.id.startsWith('quiz-ai-'));
+      const defaultIds = new Set(MOCK_QUIZZES.map(q => q.id));
+      // On sauvegarde tous les quiz créés/modifiés (ceux qui ne sont pas des mocks par défaut purs)
+      const customQuizzes = allQuizzes.filter(q => !defaultIds.has(q.id));
       localStorage.setItem(STORAGE_KEY, JSON.stringify(customQuizzes));
     } catch (e) {
       console.warn('Impossible de sauvegarder les quiz dans le localStorage:', e);

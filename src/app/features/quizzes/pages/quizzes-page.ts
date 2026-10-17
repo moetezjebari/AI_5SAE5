@@ -13,6 +13,9 @@ import { PageHeader } from '../../../shared/components/page-header';
       <a class="btn btn-primary" routerLink="/quizzes/generate">
         <span class="material-symbols-outlined">auto_awesome</span> Générer un quiz IA
       </a>
+      <a class="btn btn-outline" routerLink="/quizzes/create">
+        <span class="material-symbols-outlined">add</span> Nouveau quiz
+      </a>
     </app-page-header>
 
     <div class="filters">
@@ -59,16 +62,17 @@ import { PageHeader } from '../../../shared/components/page-header';
               <a class="btn btn-primary btn-block" [routerLink]="['/quizzes', q.id]">
                 <span class="material-symbols-outlined">play_arrow</span> Démarrer
               </a>
-              @if (q.isAiGenerated || q.id.startsWith('custom-')) {
-                <button
-                  type="button"
-                  class="btn btn-icon delete-btn"
-                  title="Supprimer ce quiz"
-                  (click)="deleteQuiz(q.id, $event)"
-                >
-                  <span class="material-symbols-outlined">delete</span>
-                </button>
-              }
+              <a class="btn btn-outline" [routerLink]="['/quizzes', q.id, 'edit']">
+                <span class="material-symbols-outlined">edit</span> Modifier
+              </a>
+              <button
+                type="button"
+                class="btn btn-icon delete-btn"
+                title="Supprimer ce quiz"
+                (click)="deleteQuiz(q.id, $event)"
+              >
+                <span class="material-symbols-outlined">delete</span>
+              </button>
             </div>
           </app-card>
         }
@@ -103,8 +107,11 @@ import { PageHeader } from '../../../shared/components/page-header';
     .difficulty-tag { font-weight: 500; }
     .diff-med { color: var(--color-warning); }
     .diff-hard { color: var(--color-danger); }
-    .card-footer { display: flex; gap: var(--space-2); margin-top: var(--space-3); align-items: center; }
+    .card-footer { display: flex; gap: var(--space-2); margin-top: var(--space-3); align-items: center; flex-wrap: wrap; }
     .delete-btn { color: var(--color-text-muted); &:hover { color: var(--color-danger); border-color: var(--color-danger); } }
+    .btn-outline { background: transparent; border: 1px solid var(--color-border); color: var(--color-text); padding: 8px 14px; font-size: 0.9rem; border-radius: var(--radius-md); cursor: pointer; display: inline-flex; align-items: center; gap: 6px; }
+    .btn-outline:hover { background: var(--color-bg); border-color: var(--color-primary); }
+    .btn-outline .material-symbols-outlined { font-size: 18px; }
   `]
 })
 export class QuizzesPage {

@@ -2,10 +2,38 @@ import { Injectable, signal } from '@angular/core';
 import { MOCK_COURSES } from '../mocks/mock-data';
 import { Course } from '../models/lms.model';
 
+const STORAGE_KEY = 'lms_custom_courses';
+
 @Injectable({ providedIn: 'root' })
 export class CourseService {
-  private readonly _courses = signal<Course[]>(MOCK_COURSES);
+  private readonly _courses = signal<Course[]>(this.loadInitialCourses());
   readonly courses = this._courses.asReadonly();
+
+  private loadInitialCourses(): Course[] {
+    const defaultCourses = [...MOCK_COURSES];
+    try {
+      const stored = localStorage.getItem(STORAGE_KEY);
+      if (stored) {
+        const parsed: Course[] = JSON.parse(stored);
+        const storedIds = new Set(parsed.map(c => c.id));
+        const filteredDefaults = defaultCourses.filter(c => !storedIds.has(c.id));
+        return [...parsed, ...filteredDefaults];
+      }
+    } catch (e) {
+      console.warn('Impossible de charger les cours du localStorage:', e);
+    }
+    return defaultCourses;
+  }
+
+  private persistCourses(allCourses: Course[]): void {
+    try {
+      const defaultIds = new Set(MOCK_COURSES.map(c => c.id));
+      const customCourses = allCourses.filter(c => !defaultIds.has(c.id));
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(customCourses));
+    } catch (e) {
+      console.warn('Impossible de sauvegarder les cours dans le localStorage:', e);
+    }
+  }
 
   getAll(): Course[] {
     return this._courses();
@@ -13,6 +41,31 @@ export class CourseService {
 
   getById(id: string): Course | undefined {
     return this._courses().find(c => c.id === id);
+  }
+
+  saveCourse(course: Course): void {
+    const current = this._courses();
+    const existingIndex = current.findIndex(c => c.id === course.id);
+    let updated: Course[];
+    if (existingIndex >= 0) {
+      updated = [...current];
+      updated[existingIndex] = course;
+    } else {
+      updated = [course, ...current];
+    }
+    this._courses.set(updated);
+    this.persistCourses(updated);
+  }
+
+  deleteCourse(id: string): boolean {
+    const current = this._courses();
+    const updated = current.filter(c => c.id !== id);
+    if (updated.length !== current.length) {
+      this._courses.set(updated);
+      this.persistCourses(updated);
+      return true;
+    }
+    return false;
   }
 
   /**
