@@ -73,9 +73,11 @@ export class AuthService {
     this._user.set(user);
   }
 
+  /** Fusionne avec l'utilisateur courant (une réponse partielle ne fait pas perdre la photo). */
   updateUser(user: User): void {
-    localStorage.setItem(USER_KEY, JSON.stringify(user));
-    this._user.set(user);
+    const merged = { ...(this._user() ?? {}), ...user } as User;
+    localStorage.setItem(USER_KEY, JSON.stringify({ ...merged, avatar: undefined, activity: undefined }));
+    this._user.set(merged);
   }
 
   logout(): void {

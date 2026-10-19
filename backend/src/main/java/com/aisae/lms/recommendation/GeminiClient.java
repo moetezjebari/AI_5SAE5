@@ -61,6 +61,48 @@ public class GeminiClient {
         return null;
     }
 
+    /**
+     * Conversation multi-tours avec instruction système (assistant d'apprentissage).
+     * Parcourt les mêmes modèles que {@link #generateJson}. Retourne le texte, ou null si tous les essais ont échoué.
+     * La clé est envoyée dans l'en-tête, jamais dans l'URL.
+     */
+    public String chat(String systemPrompt, java.util.List<Map<String, Object>> contents) {
+        if (!isConfigured()) {
+            return null;
+        }
+        for (String model : properties.allModelsInOrder()) {
+            try {
+                Map<String, Object> body = Map.of(
+                        "systemInstruction", Map.of("parts", new Object[]{ Map.of("text", systemPrompt) }),
+                        "contents", contents,
+                        "generationConfig", Map.of("temperature", 0.4, "maxOutputTokens", 1500)
+                );
+                HttpRequest httpRequest = HttpRequest.newBuilder()
+                        .uri(URI.create("https://generativelanguage.googleapis.com/v1beta/models/" + model + ":generateContent"))
+                        .header("Content-Type", "application/json")
+                        .header("x-goog-api-key", properties.apiKey())
+                        .timeout(Duration.ofSeconds(properties.timeoutSeconds()))
+                        .POST(HttpRequest.BodyPublishers.ofString(objectMapper.writeValueAsString(body), StandardCharsets.UTF_8))
+                        .build();
+                HttpResponse<String> response = httpClient.send(httpRequest, HttpResponse.BodyHandlers.ofString());
+                if (response.statusCode() != 200) {
+                    log.warn("Assistant : Gemini a répondu {} pour le modèle {}", response.statusCode(), model);
+                    continue;
+                }
+                StringBuilder out = new StringBuilder();
+                for (JsonNode part : objectMapper.readTree(response.body()).path("candidates").path(0).path("content").path("parts")) {
+                    out.append(part.path("text").asText(""));
+                }
+                if (!out.toString().isBlank()) {
+                    return out.toString().trim();
+                }
+            } catch (Exception ex) {
+                log.warn("Assistant : appel Gemini échoué pour le modèle {} : {}", model, ex.getClass().getSimpleName());
+            }
+        }
+        return null;
+    }
+
     private String callModel(String model, String prompt) throws Exception {
         String url = String.format(ENDPOINT_TEMPLATE, model, properties.apiKey());
 

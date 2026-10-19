@@ -38,6 +38,12 @@ public class JwtService {
         return parseClaims(token).getSubject();
     }
 
+    /** Version de jeton portée par le claim "tv" ; les jetons émis avant cette fonctionnalité valent 0. */
+    public int extractTokenVersion(String token) {
+        Integer tv = parseClaims(token).get("tv", Integer.class);
+        return tv == null ? 0 : tv;
+    }
+
     public boolean isTokenValid(String token, String expectedEmail) {
         try {
             Claims claims = parseClaims(token);

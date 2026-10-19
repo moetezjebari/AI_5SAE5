@@ -71,11 +71,6 @@ export interface Recommendation {
   link: string;
 }
 
-export interface ChatMessage {
-  from: 'user' | 'assistant';
-  text: string;
-}
-
 export interface Result {
   label: string;
   kind: 'Quiz' | 'Exercice';

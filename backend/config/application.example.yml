@@ -1,0 +1,5 @@
+# Modèle (non chargé automatiquement).
+# Copiez ce fichier vers backend/config/application.yml puis renseignez votre clé Gemini.
+app:
+  gemini:
+    api-key: ""

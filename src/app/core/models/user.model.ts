@@ -6,4 +6,10 @@ export interface User {
   firstName: string;
   lastName: string;
   role: Role;
+  field?: string | null;
+  level?: string | null;
+  avatar?: string | null;
+  createdAt?: string;
+  lastLoginAt?: string | null;
+  activity?: { conversations: number; messages: number };
 }

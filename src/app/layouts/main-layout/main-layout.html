@@ -31,7 +31,11 @@
         <span class="material-symbols-outlined">{{ themeService.theme() === 'dark' ? 'light_mode' : 'dark_mode' }}</span>
       </button>
       <div class="user">
-        <span class="avatar">{{ (user()?.firstName || user()?.email || 'U').charAt(0).toUpperCase() }}</span>
+        @if (user()?.avatar) {
+          <img class="avatar" [src]="user()!.avatar" alt="" />
+        } @else {
+          <span class="avatar">{{ (user()?.firstName || user()?.email || 'U').charAt(0).toUpperCase() }}</span>
+        }
         <span class="name">{{ user()?.firstName ? (user()!.firstName + ' ' + (user()!.lastName || '')) : (user()?.email || 'Utilisateur') }}</span>
       </div>
       <button class="btn btn-icon" (click)="logout()" aria-label="Déconnexion">

@@ -8,6 +8,8 @@ public record RegisterRequest(
         @NotBlank @Email String email,
         @NotBlank @Size(min = 8, message = "Le mot de passe doit contenir au moins 8 caractères") String password,
         @NotBlank String firstName,
-        @NotBlank String lastName
+        @NotBlank String lastName,
+        /** Facultatif : STUDENT (défaut) ou TEACHER. ADMIN n'est jamais attribuable à l'inscription. */
+        com.aisae.lms.user.Role role
 ) {
 }

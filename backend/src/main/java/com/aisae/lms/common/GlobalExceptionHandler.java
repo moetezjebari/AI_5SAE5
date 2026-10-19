@@ -28,6 +28,11 @@ public class GlobalExceptionHandler {
                 .body(ApiError.of(400, "Bad Request", "Erreur de validation", fieldErrors));
     }
 
+    @ExceptionHandler(org.springframework.http.converter.HttpMessageNotReadableException.class)
+    public ResponseEntity<ApiError> handleUnreadable(org.springframework.http.converter.HttpMessageNotReadableException ex) {
+        return ResponseEntity.badRequest().body(ApiError.of(400, "Bad Request", "Requête mal formée"));
+    }
+
     @ExceptionHandler(BadCredentialsException.class)
     public ResponseEntity<ApiError> handleBadCredentials(BadCredentialsException ex) {
         return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
@@ -38,6 +43,12 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ApiError> handleAccessDenied(AccessDeniedException ex) {
         return ResponseEntity.status(HttpStatus.FORBIDDEN)
                 .body(ApiError.of(403, "Forbidden", "Accès refusé"));
+    }
+
+    @ExceptionHandler(com.aisae.lms.assistant.AiClient.AiUnavailableException.class)
+    public ResponseEntity<ApiError> handleAiUnavailable(com.aisae.lms.assistant.AiClient.AiUnavailableException ex) {
+        return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE)
+                .body(ApiError.of(503, "Service Unavailable", ex.getMessage()));
     }
 
     @ExceptionHandler(Exception.class)

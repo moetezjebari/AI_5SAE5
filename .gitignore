@@ -47,3 +47,4 @@ Thumbs.db
 /backend/.env
 /backend/.mvn/wrapper/maven-wrapper.jar
 
+/backend/config/application.yml

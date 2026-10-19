@@ -69,6 +69,12 @@ public class SecurityConfig {
                 .requestMatchers("/api/auth/register", "/api/auth/login").permitAll()
                 .requestMatchers("/actuator/health").permitAll()
                 .anyRequest().authenticated())
+            .exceptionHandling(e -> e.authenticationEntryPoint((req, res, ex) -> {
+                res.setStatus(401);
+                res.setContentType("application/json");
+                res.setCharacterEncoding("UTF-8");
+                res.getWriter().write("{\"status\":401,\"error\":\"Unauthorized\",\"message\":\"Authentification requise\"}");
+            }))
             .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);
 
         return http.build();

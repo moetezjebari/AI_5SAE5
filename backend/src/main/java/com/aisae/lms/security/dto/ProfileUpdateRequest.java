@@ -12,6 +12,10 @@ public record ProfileUpdateRequest(
 
         @NotBlank(message = "L'e-mail est obligatoire")
         @Email(message = "Format d'e-mail invalide")
-        String email
+        String email,
+
+        /** Facultatifs : absent = inchangé, chaîne vide = effacé. */
+        @jakarta.validation.constraints.Size(max = 80) String field,
+        @jakarta.validation.constraints.Size(max = 40) String level
 ) {
 }

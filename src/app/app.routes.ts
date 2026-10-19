@@ -22,6 +22,7 @@ export const routes: Routes = [
       { path: 'quizzes', loadChildren: () => import('./features/quizzes/quizzes.routes').then(m => m.QUIZZES_ROUTES) },
       { path: 'performance', loadChildren: () => import('./features/performance/performance.routes').then(m => m.PERFORMANCE_ROUTES) },
       { path: 'recommendations', loadChildren: () => import('./features/recommendations/recommendations.routes').then(m => m.RECOMMENDATIONS_ROUTES) },
+      { path: 'admin', loadChildren: () => import('./features/admin/admin.routes').then(m => m.ADMIN_ROUTES) },
       { path: '', pathMatch: 'full', redirectTo: 'dashboard' }
     ]
   },

@@ -1,4 +1,4 @@
-import { ChatMessage, Course, Exercise, Quiz, Recommendation, Result } from '../models/lms.model';
+import { Course, Exercise, Quiz, Recommendation, Result } from '../models/lms.model';
 
 export const MOCK_COURSES: Course[] = [
   {
@@ -518,16 +518,6 @@ export const MOCK_RESULTS: Result[] = [
   { label: 'Calcul de complexité', kind: 'Exercice', course: 'Algorithmique', score: 18, date: '23/09/2026' },
   { label: 'Inverser une liste chaînée', kind: 'Exercice', course: 'Algorithmique', score: 16, date: '20/09/2026' },
   { label: 'Modèle OSI', kind: 'Quiz', course: 'Réseaux', score: 9, date: '18/09/2026' }
-];
-
-export const MOCK_CHAT: ChatMessage[] = [
-  { from: 'assistant', text: 'Bonjour ! Je suis votre assistant d’apprentissage. Posez-moi une question sur vos cours, ou demandez-moi de vous expliquer une notion.' }
-];
-
-export const MOCK_CHAT_HISTORY = [
-  'Différence entre pile et file',
-  'Expliquer la normalisation',
-  'Plan de révision réseaux'
 ];
 
 export const WEEKLY_HOURS = [

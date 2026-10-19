@@ -61,6 +61,7 @@
 
 .user { display: flex; align-items: center; gap: var(--space-2); }
 
+img.avatar { object-fit: cover; }
 .avatar {
   display: grid;
   place-items: center;

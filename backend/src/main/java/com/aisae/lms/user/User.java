@@ -39,6 +39,23 @@ public class User implements UserDetails {
     @Column(nullable = false, length = 20)
     private Role role;
 
+    @Column(length = 80)
+    private String field;
+
+    @Column(length = 40)
+    private String level;
+
+    /** Photo de profil en data URL (png/jpeg/webp), validée par UserController. */
+    @Column(columnDefinition = "MEDIUMTEXT")
+    private String avatar;
+
+    /** Incrémenté à la déconnexion et au changement de rôle : invalide les JWT déjà émis. */
+    @Column(name = "token_version", nullable = false)
+    private int tokenVersion = 0;
+
+    @Column(name = "last_login_at")
+    private Instant lastLoginAt;
+
     @Column(name = "created_at", nullable = false, updatable = false, insertable = false)
     private Instant createdAt;
 

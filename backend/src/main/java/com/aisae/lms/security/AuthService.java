@@ -36,27 +36,36 @@ public class AuthService {
 
     @Transactional
     public AuthResponse register(RegisterRequest request) {
-        if (userRepository.existsByEmail(request.email())) {
+        String email = request.email().trim().toLowerCase();
+        if (userRepository.existsByEmail(email)) {
             throw ApiException.conflict("Un compte existe déjà avec cet e-mail");
+        }
+        Role role = request.role() == null ? Role.STUDENT : request.role();
+        if (role == Role.ADMIN) {
+            throw ApiException.forbidden("Ce rôle ne peut pas être choisi à l'inscription");
         }
 
         User user = new User();
-        user.setEmail(request.email().trim().toLowerCase());
+        user.setEmail(email);
         user.setPasswordHash(passwordEncoder.encode(request.password()));
         user.setFirstName(request.firstName().trim());
         user.setLastName(request.lastName().trim());
-        user.setRole(Role.STUDENT); // self-registration is always a student account
+        user.setRole(role); // STUDENT ou TEACHER au choix ; ADMIN uniquement attribué par un administrateur
+        user.setLastLoginAt(java.time.Instant.now());
 
         User saved = userRepository.save(user);
         return buildAuthResponse(saved);
     }
 
+    @Transactional
     public AuthResponse login(LoginRequest request) {
         authenticationManager.authenticate(
                 new UsernamePasswordAuthenticationToken(request.email().trim().toLowerCase(), request.password()));
 
         User user = userRepository.findByEmail(request.email().trim().toLowerCase())
                 .orElseThrow(() -> ApiException.notFound("Utilisateur introuvable"));
+        user.setLastLoginAt(java.time.Instant.now());
+        userRepository.save(user);
         return buildAuthResponse(user);
     }
 
@@ -65,7 +74,8 @@ public class AuthService {
                 "role", user.getRole().name(),
                 "userId", user.getId(),
                 "firstName", user.getFirstName() != null ? user.getFirstName() : "",
-                "lastName", user.getLastName() != null ? user.getLastName() : ""
+                "lastName", user.getLastName() != null ? user.getLastName() : "",
+                "tv", user.getTokenVersion()
         ));
         return new AuthResponse(token, UserSummaryDto.from(user));
     }
@@ -79,8 +89,16 @@ public class AuthService {
         user.setFirstName(request.firstName().trim());
         user.setLastName(request.lastName().trim());
         user.setEmail(cleanEmail);
+        if (request.field() != null) user.setField(request.field().isBlank() ? null : request.field().trim());
+        if (request.level() != null) user.setLevel(request.level().isBlank() ? null : request.level().trim());
         User saved = userRepository.save(user);
         return UserSummaryDto.from(saved);
+    }
+
+    /** Invalide tous les jetons déjà émis pour ce compte. */
+    @Transactional
+    public void logout(User user) {
+        userRepository.findById(user.getId()).ifPresent(u -> u.setTokenVersion(u.getTokenVersion() + 1));
     }
 
     @Transactional

@@ -1,5 +1,6 @@
-import { Component, inject, signal } from '@angular/core';
+import { Component, OnInit, inject, signal } from '@angular/core';
 import { Router, RouterLink, RouterOutlet } from '@angular/router';
+import { AuthApiService } from '../../core/services/auth-api.service';
 import { AuthService } from '../../core/services/auth.service';
 import { ThemeService } from '../../core/services/theme.service';
 
@@ -20,8 +21,9 @@ interface NavGroup {
   templateUrl: './main-layout.html',
   styleUrl: './main-layout.scss'
 })
-export class MainLayout {
+export class MainLayout implements OnInit {
   private readonly auth = inject(AuthService);
+  private readonly authApi = inject(AuthApiService);
   private readonly router = inject(Router);
   protected readonly themeService = inject(ThemeService);
 
@@ -56,7 +58,10 @@ export class MainLayout {
       },
       {
         title: 'Compte',
-        items: [{ path: '/profile', label: 'Profil', icon: 'person' }]
+        items: [
+          { path: '/profile', label: 'Profil', icon: 'person' },
+          ...(this.user()?.role === 'ADMIN' ? [{ path: '/admin/users', label: 'Utilisateurs', icon: 'admin_panel_settings' }] : [])
+        ]
       }
     ];
   }
@@ -74,8 +79,12 @@ export class MainLayout {
     return best === path;
   }
 
+  ngOnInit(): void {
+    // Charge photo et profil détaillé (la session restaurée ne contient que les données du jeton).
+    this.authApi.getMe().subscribe({ error: () => undefined });
+  }
+
   protected logout(): void {
-    this.auth.logout();
-    this.router.navigate(['/auth/login']);
+    this.authApi.logout().subscribe(() => this.router.navigate(['/auth/login']));
   }
 }

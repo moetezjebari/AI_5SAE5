@@ -1,3 +1,4 @@
+import { DatePipe } from '@angular/common';
 import { Component, OnInit, inject, signal } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { AuthService } from '../../../core/services/auth.service';
@@ -10,7 +11,7 @@ import { PageHeader } from '../../../shared/components/page-header';
 @Component({
   selector: 'app-profile-page',
   standalone: true,
-  imports: [PageHeader, Card, ReactiveFormsModule],
+  imports: [PageHeader, Card, ReactiveFormsModule, DatePipe],
   template: `
     <app-page-header title="Mon profil" subtitle="Gérez vos informations et vos préférences." />
 
@@ -31,12 +32,33 @@ import { PageHeader } from '../../../shared/components/page-header';
     <div class="layout">
       <!-- User Identity Card -->
       <app-card class="identity">
-        <span class="big-avatar">{{ avatarInitial() }}</span>
+        @if (user()?.avatar) {
+          <img class="big-avatar" [src]="user()!.avatar" alt="Photo de profil" />
+        } @else {
+          <span class="big-avatar">{{ avatarInitial() }}</span>
+        }
         <h2>{{ displayName() }}</h2>
         <p class="text-muted">{{ displayEmail() }}</p>
         <span class="badge" [class.badge-teacher]="user()?.role === 'TEACHER'" [class.badge-admin]="user()?.role === 'ADMIN'">
           {{ roleLabel(user()?.role) }}
         </span>
+
+        <div class="photo-actions">
+          <label class="btn">
+            Changer la photo
+            <input type="file" accept="image/png,image/jpeg,image/webp" hidden (change)="onPhoto($event)" />
+          </label>
+          @if (user()?.avatar) { <button class="btn" type="button" (click)="removePhoto()">Retirer</button> }
+        </div>
+        @if (photoMsg()) { <p class="photo-msg" [class.error]="photoIsError()">{{ photoMsg() }}</p> }
+
+        <h3>Activité</h3>
+        <ul class="activity">
+          <li><strong>{{ user()?.activity?.conversations ?? 0 }}</strong> conversation(s) avec l'assistant</li>
+          <li><strong>{{ user()?.activity?.messages ?? 0 }}</strong> message(s) échangé(s)</li>
+          @if (user()?.createdAt) { <li>Membre depuis le {{ user()?.createdAt | date: 'dd/MM/yyyy' }}</li> }
+          @if (user()?.lastLoginAt) { <li>Dernière connexion : {{ user()?.lastLoginAt | date: 'dd/MM/yyyy HH:mm' }}</li> }
+        </ul>
       </app-card>
 
       <div class="forms">
@@ -166,6 +188,10 @@ import { PageHeader } from '../../../shared/components/page-header';
   styles: [`
     .layout { display: grid; grid-template-columns: 280px 1fr; gap: var(--space-4); align-items: start; }
     .identity { text-align: center; }
+    img.big-avatar { object-fit: cover; width: 96px; height: 96px; }
+    .photo-actions { display: flex; justify-content: center; gap: var(--space-2); margin-top: var(--space-3); }
+    .photo-msg { margin: var(--space-2) 0 0; font-size: 0.85rem; color: var(--color-success); }
+    .activity { list-style: none; padding: 0; margin: 0; text-align: left; display: grid; gap: var(--space-2); font-size: 0.9rem; }
     .big-avatar { display: inline-grid; place-items: center; width: 80px; height: 80px; margin-bottom: var(--space-3); font-size: 2rem; font-weight: 700; color: #fff; background: var(--color-primary); border-radius: 50%; }
     .forms { display: grid; gap: var(--space-4); }
     .two { display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-4); }
@@ -203,6 +229,9 @@ export class ProfilePage implements OnInit {
   protected readonly passwordSuccess = signal<string | null>(null);
   protected readonly passwordError = signal<string | null>(null);
 
+  protected readonly photoMsg = signal('');
+  protected readonly photoIsError = signal(false);
+
   protected emailNotifications = true;
 
   protected readonly form = this.fb.nonNullable.group({
@@ -235,7 +264,9 @@ export class ProfilePage implements OnInit {
           this.form.patchValue({
             firstName: serverUser.firstName || '',
             lastName: serverUser.lastName || '',
-            email: serverUser.email || ''
+            email: serverUser.email || '',
+            field: serverUser.field || this.form.controls.field.value,
+            level: serverUser.level || this.form.controls.level.value
           });
         }
       },
@@ -290,7 +321,7 @@ export class ProfilePage implements OnInit {
     this.profileSuccess.set(null);
     this.profileError.set(null);
 
-    this.authApi.updateProfile(firstName, lastName, email).subscribe({
+    this.authApi.updateProfile(firstName, lastName, email, field, level).subscribe({
       next: (updatedUser) => {
         this.savingProfile.set(false);
         this.profileSuccess.set('Vos informations personnelles ont été enregistrées avec succès.');
@@ -300,6 +331,51 @@ export class ProfilePage implements OnInit {
         this.savingProfile.set(false);
         this.profileError.set(err.error?.message || 'Erreur lors de la mise à jour de vos informations.');
       }
+    });
+  }
+
+  protected onPhoto(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    const file = input.files?.[0];
+    input.value = '';
+    if (!file) return;
+    this.photoMsg.set('');
+    if (!/^image\/(png|jpeg|webp)$/.test(file.type)) {
+      this.photoIsError.set(true);
+      this.photoMsg.set('Formats acceptés : png, jpeg, webp.');
+      return;
+    }
+    this.toAvatarDataUrl(file).then(
+      dataUrl => this.authApi.setAvatar(dataUrl).subscribe({
+        next: () => { this.photoIsError.set(false); this.photoMsg.set('Photo mise à jour.'); },
+        error: err => { this.photoIsError.set(true); this.photoMsg.set(err.error?.message || 'Envoi de la photo impossible.'); }
+      }),
+      () => { this.photoIsError.set(true); this.photoMsg.set('Image illisible.'); }
+    );
+  }
+
+  protected removePhoto(): void {
+    this.authApi.setAvatar(null).subscribe({
+      next: () => { this.photoIsError.set(false); this.photoMsg.set('Photo retirée.'); },
+      error: err => { this.photoIsError.set(true); this.photoMsg.set(err.error?.message || 'Suppression impossible.'); }
+    });
+  }
+
+  /** Recadre en carré et redimensionne côté navigateur (256 px, JPEG) pour rester sous la limite du serveur. */
+  private toAvatarDataUrl(file: File): Promise<string> {
+    return new Promise((resolve, reject) => {
+      const url = URL.createObjectURL(file);
+      const img = new Image();
+      img.onload = () => {
+        const size = Math.min(img.width, img.height);
+        const canvas = document.createElement('canvas');
+        canvas.width = canvas.height = Math.min(256, size);
+        canvas.getContext('2d')!.drawImage(img, (img.width - size) / 2, (img.height - size) / 2, size, size, 0, 0, canvas.width, canvas.height);
+        URL.revokeObjectURL(url);
+        resolve(canvas.toDataURL('image/jpeg', 0.85));
+      };
+      img.onerror = () => { URL.revokeObjectURL(url); reject(new Error('image')); };
+      img.src = url;
     });
   }
 

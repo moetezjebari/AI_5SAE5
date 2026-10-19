@@ -47,6 +47,13 @@ function passwordsMatch(group: AbstractControl): ValidationErrors | null {
           }
         </div>
         <div class="form-field">
+          <label for="rl">Je suis</label>
+          <select id="rl" formControlName="role">
+            <option value="STUDENT">Étudiant</option>
+            <option value="TEACHER">Enseignant / Formateur</option>
+          </select>
+        </div>
+        <div class="form-field">
           <label for="pw">Mot de passe</label>
           <input id="pw" type="password" formControlName="password" />
           @if (form.controls.password.touched && form.controls.password.invalid) {
@@ -95,15 +102,16 @@ export class RegisterPage {
     lastName: ['', Validators.required],
     email: ['', [Validators.required, Validators.email]],
     password: ['', [Validators.required, Validators.minLength(8)]],
-    confirm: ['', Validators.required]
+    confirm: ['', Validators.required],
+    role: ['STUDENT' as 'STUDENT' | 'TEACHER']
   }, { validators: passwordsMatch });
 
   protected submit(): void {
     if (this.form.invalid) { this.form.markAllAsTouched(); return; }
-    const { firstName, lastName, email, password } = this.form.getRawValue();
+    const { firstName, lastName, email, password, role } = this.form.getRawValue();
     this.loading.set(true);
     this.error.set(null);
-    this.authApi.register(firstName, lastName, email, password).subscribe({
+    this.authApi.register(firstName, lastName, email, password, role).subscribe({
       next: () => this.router.navigate(['/dashboard']),
       error: err => {
         this.error.set(err.status === 409 ? 'Un compte existe déjà avec cet e-mail.' : 'Erreur lors de la création du compte.');
